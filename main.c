@@ -54,14 +54,15 @@ int main(int argc, char *argv[]) {
     fclose(input_file);
 
     // --- 2. Inicialização do escalonador ---
-    scheduler_init(scheduler_type);
+    
 
     // --- 3. Inicialização da fila de prontos e variáveis globais ---
     FILA* f = criaFila(scheduler_type, pcb_list);
 
+    SCHEDULER* e  = criarEscalonador(scheduler_type,500, f);
     // --- 4. Criar thread escalonadora ---
     pthread_t scheduler_thread;
-    pthread_create(&scheduler_thread, NULL, scheduler_run, NULL);
+    pthread_create(&scheduler_thread, NULL, SCHEDULER_thread , e);
 
     // --- 5. Criar threads dos processos na hora certa ---
     // O ideal é criar uma thread que monitora o tempo e cria as threads dos processos
@@ -70,18 +71,18 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < n_processes; i++) {
         // Espera ativa até o tempo de chegada do processo
-        while (current_time_millis() - start_time_ms < getPcbTempoChegada(pcb_list[i])) {
+        while (current_time_millis() - start_time_ms < PCB_get_tempo_chegada(pcb_list[i])) {
             usleep(1000); // Dorme 1ms para evitar busy wait pesado
         }
 
         // Criar as threads do processo
-        pcb_create_threads(&pcb_list[i]);
+        PCB_create_threads(pcb_list[i]);
 
         // Colocar o processo na fila de prontos
-        ready_queue_enqueue(&pcb_list[i]);
+        QUEUE_push( f,pcb_list[i]);
 
         // Sinalizar o escalonador que há um novo processo na fila
-        scheduler_notify_new_process();
+        SCHEDULER_notifica_novo_processo(e);
     }
 
     // --- 6. Esperar escalonador finalizar ---

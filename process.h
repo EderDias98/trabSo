@@ -7,9 +7,7 @@
 #include <unistd.h>
 
 // Definições para políticas de escalonamento
-#define FCFS 1
-#define ROUND_ROBIN 2
-#define PRIORITY_PREEMPTIVE 3
+
 
 #define QUANTUM 500 // Quantum para Round Robin
 
@@ -17,10 +15,25 @@
 // Tipos opacos
 typedef struct PCB PCB;
 typedef struct TCB TCB;
+typedef enum { PRONTO, EXECUTANDO, FINALIZADO } EstadoProcesso;
 
-int tamanhoPcb();
-PCB* InicializaPCB(PCB* processo ,int pid, int duracao_total, int prioridade, int num_threads, int tempo_chegada);
-void destruirPCB(PCB* processo);
-int getPcbTempoChegada(PCB* p);
-int PcbGetPrioridade(PCB*p);
+int PCB_get_tamanho();
+
+PCB* PCB_inicializa(PCB* processo ,int pid, int duracao_total, int prioridade, int num_threads, int tempo_chegada);
+    
+
+void PCB_libera(PCB* processo);
+ 
+
+void*  PCB_funcao_thread(void* arg);
+
+     
+
+int PCB_get_tempo_chegada(PCB* p);
+  
+int PCB_get_prioridade(PCB*p);
+  
+void PCB_create_threads(PCB* pcb);
+ 
+
 #endif

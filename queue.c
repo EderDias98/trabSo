@@ -4,7 +4,7 @@
 #define MAX 1024
 
 struct FILA {
-    int politica;
+    PoliticaEscalonamento politica;
     PCB** processos;
     int inicio;
     int fim;
@@ -13,32 +13,29 @@ struct FILA {
 };
 
 // Função de criação
-FILA* criaFila(int politica, PCB** processos) {
+FILA* QUEUE_cria(int politica, PCB** processos) {
     FILA* fila = malloc(sizeof(FILA));
     fila->politica = politica;
     fila->inicio = 0;
     fila->fim = 0;
     fila->tamanho = 0;
-    fila->quantum = 500;  // valor padrão
     fila->processos = processos;
     return fila;
 }
 
-// Definir quantum para Round Robin
-void set_quantum(FILA* fila, int quantum) {
-    fila->quantum = quantum;
-}
+
 
 // Libera a fila
-void destruir_fila(FILA* fila) {
+void QUEUE_libera(FILA* fila) {
+    if(!fila) return;
     free(fila);
 }
 
 // Insere no fim (FCFS ou RR) ou ordenado (Prioridade)
-void enfileirar(FILA* fila, PCB* processo) {
+void QUEUE_push(FILA* fila, PCB* processo) {
     if (fila->tamanho >= MAX) return;
 
-    if (fila->politica == 3) {
+    if (fila->politica == PRIORIDADE) {
         int i = fila->fim;
         while (i != fila->inicio) {
             int prev = (i - 1 + MAX) % MAX;
@@ -57,7 +54,7 @@ void enfileirar(FILA* fila, PCB* processo) {
 }
 
 // Remove do início (todos os algoritmos)
-PCB* desenfileirar(FILA* fila) {
+PCB* QUEUE_pop(FILA* fila) {
     if (fila->tamanho == 0) return NULL;
 
     PCB* proc = fila->processos[fila->inicio];
@@ -68,6 +65,6 @@ PCB* desenfileirar(FILA* fila) {
 }
 
 // Verifica se está vazia
-int fila_vazia(FILA* fila) {
+int  QUEUE_vazia(FILA* fila) {
     return fila->tamanho == 0;
 }

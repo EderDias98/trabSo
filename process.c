@@ -1,7 +1,7 @@
 #include "process.h"
 
 // Definição dos estados possíveis do processo
-typedef enum { PRONTO, EXECUTANDO, FINALIZADO } EstadoProcesso;
+
 
 struct PCB{
 
@@ -25,11 +25,11 @@ struct TCB{
 
 #define TEMPO_EXECUCAO_THREAD 500  // simula 500ms de execução
 
-int tamanhoPcb() {
+int PCB_get_tamanho() {
     return sizeof(PCB);
 }
 
-PCB* InicializaPCB(PCB* processo ,int pid, int duracao_total, int prioridade, int num_threads, int tempo_chegada) {
+PCB* PCB_inicializa(PCB* processo ,int pid, int duracao_total, int prioridade, int num_threads, int tempo_chegada) {
     
     if (processo == NULL) {
         perror("Erro ao alocar memória para o processo");
@@ -57,7 +57,7 @@ PCB* InicializaPCB(PCB* processo ,int pid, int duracao_total, int prioridade, in
     return processo;
 }
 
-void destruirPCB(PCB* processo) {
+void PCB_libera(PCB* processo) {
     if (processo == NULL) return;
 
     pthread_mutex_destroy(&processo->mutex);
@@ -66,7 +66,7 @@ void destruirPCB(PCB* processo) {
     free(processo);
 }
 
-void* funcao_thread(void* arg) {
+void*  PCB_funcao_thread(void* arg) {
     TCB* tcb = (TCB*) arg;
     PCB* pcb = tcb->pcb;
 
@@ -101,10 +101,29 @@ void* funcao_thread(void* arg) {
     return NULL;
 }
 
-int getPcbTempoChegada(PCB* p){
+int PCB_get_tempo_chegada(PCB* p){
     return p->tempo_chegada;
 }
 
-int PcbGetPrioridade(PCB*p){
+int PCB_get_prioridade(PCB*p){
     return p;
+}
+void PCB_create_threads(PCB* pcb) {
+    if (!pcb || pcb->num_threads <= 0) {
+        fprintf(stderr, "PCB inválido ou número de threads <= 0\n");
+        return -1;
+    }
+
+    for (int i = 0; i < pcb->num_threads; i++) {
+        TCB* tcb = malloc(sizeof(TCB));
+
+        tcb->pcb = pcb;
+        tcb->indice_thread = i;
+
+        if (pthread_create(&pcb->threads_ids[i], NULL, PCB_funcao_thread, (void*)tcb) != 0) {
+            perror("Erro ao criar thread");
+            free(tcb); // evita vazamento
+            return -1;
+        }
+    }
 }
