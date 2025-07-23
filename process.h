@@ -35,5 +35,13 @@ int PCB_get_prioridade(PCB*p);
   
 void PCB_create_threads(PCB* pcb);
  
+void PCB_join_threads(PCB* p);
+EstadoProcesso PCB_get_estado(PCB* p);
+ 
+
+void PCB_set_estado(PCB* p, EstadoProcesso esp);
+pthread_mutex_t* PCB_get_mutex(PCB* p);
+  
+pthread_cond_t* PCB_get_cond(PCB* p);
 
 #endif

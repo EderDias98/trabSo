@@ -1,21 +1,21 @@
 #include "process.h"
 
-// Definição dos estados possíveis do processo
+// Definição dos estados possíveis do p
 
 
 struct PCB{
 
-    int pid;                // ID único do processo
-    int duracao_total;      // duração total do processo (em ms)
-    int tempo_restante;     // quanto falta para o processo acabar (em ms)
-    int prioridade;         // prioridade do processo (não usada ainda)
-    int num_threads;        // quantas threads pertencem a este processo
-    int tempo_chegada;      // tempo (ms) para o processo "chegar" no sistema
-    EstadoProcesso estado;  // estado atual do processo
+    int pid;                // ID único do p
+    int duracao_total;      // duração total do p (em ms)
+    int tempo_restante;     // quanto falta para o p acabar (em ms)
+    int prioridade;         // prioridade do p (não usada ainda)
+    int num_threads;        // quantas threads pertencem a este p
+    int tempo_chegada;      // tempo (ms) para o p "chegar" no sistema
+    EstadoProcesso estado;  // estado atual do p
 
-    pthread_mutex_t mutex;  // trava para evitar acesso concorrente
-    pthread_cond_t cv;      // variável de condição para sincronizar as threads
-    pthread_t* threads_ids; // array com os IDs das threads do processo
+    pthread_mutex_t* mutex;  // trava para evitar acesso concorrente
+    pthread_cond_t* cv;      // variável de condição para sincronizar as threads
+    pthread_t* threads_ids; // array com os IDs das threads do p
 };
 
 struct TCB{
@@ -29,41 +29,41 @@ int PCB_get_tamanho() {
     return sizeof(PCB);
 }
 
-PCB* PCB_inicializa(PCB* processo ,int pid, int duracao_total, int prioridade, int num_threads, int tempo_chegada) {
+PCB* PCB_inicializa(PCB* p ,int pid, int duracao_total, int prioridade, int num_threads, int tempo_chegada) {
     
-    if (processo == NULL) {
-        perror("Erro ao alocar memória para o processo");
+    if (p == NULL) {
+        perror("Erro ao alocar memória para o p");
         exit(1);
     }
 
-    processo->pid = pid;
-    processo->duracao_total = duracao_total;
-    processo->tempo_restante = duracao_total;
-    processo->prioridade = prioridade;
-    processo->num_threads = num_threads;
-    processo->tempo_chegada = tempo_chegada;
-    processo->estado = PRONTO;
+    p->pid = pid;
+    p->duracao_total = duracao_total;
+    p->tempo_restante = duracao_total;
+    p->prioridade = prioridade;
+    p->num_threads = num_threads;
+    p->tempo_chegada = tempo_chegada;
+    p->estado = PRONTO;
 
     // Inicializa mutex e variável de condição
-    pthread_mutex_init(&processo->mutex, NULL);
+    pthread_mutex_init(p->mutex, NULL);
   
 
-    if (pthread_cond_init(&processo->cv, NULL) != 0);
+    pthread_cond_init(p->cv, NULL);
 
 
     // Aloca espaço para os IDs das threads
-    processo->threads_ids = malloc(sizeof(pthread_t) * num_threads);
+    p->threads_ids = malloc(sizeof(pthread_t) * num_threads);
 
-    return processo;
+    return p;
 }
 
-void PCB_libera(PCB* processo) {
-    if (processo == NULL) return;
+void PCB_libera(PCB* p) {
+    if (p == NULL) return;
 
-    pthread_mutex_destroy(&processo->mutex);
-    pthread_cond_destroy(&processo->cv);
-    free(processo->threads_ids);
-    free(processo);
+    pthread_mutex_destroy(p->mutex);
+    pthread_cond_destroy(p->cv);
+    free(p->threads_ids);
+    free(p);
 }
 
 void*  PCB_funcao_thread(void* arg) {
@@ -71,30 +71,30 @@ void*  PCB_funcao_thread(void* arg) {
     PCB* pcb = tcb->pcb;
 
     while (1) {
-        pthread_mutex_lock(&pcb->mutex);
+        pthread_mutex_lock(pcb->mutex);
         while (pcb->estado != EXECUTANDO && pcb->estado != FINALIZADO) {
             // a thread entra em espera ate o estado dela mudar
-            pthread_cond_wait(&pcb->cv, &pcb->mutex);
+            pthread_cond_wait(pcb->cv, pcb->mutex);
         }
 
         if (pcb->estado == FINALIZADO) {
-            pthread_mutex_unlock(&pcb->mutex);
+            pthread_mutex_unlock(pcb->mutex);
             break;
         }
 
-        pthread_mutex_unlock(&pcb->mutex);
+        pthread_mutex_unlock(pcb->mutex);
         usleep(TEMPO_EXECUCAO_THREAD * 1000); // simula 500 ms executando
 
-        pthread_mutex_lock(&pcb->mutex);
+        pthread_mutex_lock(pcb->mutex);
         if (pcb->tempo_restante > 0) {
             pcb->tempo_restante -= TEMPO_EXECUCAO_THREAD;
             if (pcb->tempo_restante <= 0) {
                 pcb->tempo_restante = 0;
                 pcb->estado = FINALIZADO;
-                pthread_cond_broadcast(&pcb->cv); // avisa todas threads para terminarem
+                pthread_cond_broadcast(pcb->cv); // avisa todas threads para terminarem
             }
         }
-        pthread_mutex_unlock(&pcb->mutex);
+        pthread_mutex_unlock(pcb->mutex);
     }
 
     free(tcb);
@@ -106,13 +106,11 @@ int PCB_get_tempo_chegada(PCB* p){
 }
 
 int PCB_get_prioridade(PCB*p){
-    return p;
+    return p->prioridade;
 }
 void PCB_create_threads(PCB* pcb) {
-    if (!pcb || pcb->num_threads <= 0) {
-        fprintf(stderr, "PCB inválido ou número de threads <= 0\n");
-        return -1;
-    }
+
+
 
     for (int i = 0; i < pcb->num_threads; i++) {
         TCB* tcb = malloc(sizeof(TCB));
@@ -120,10 +118,30 @@ void PCB_create_threads(PCB* pcb) {
         tcb->pcb = pcb;
         tcb->indice_thread = i;
 
-        if (pthread_create(&pcb->threads_ids[i], NULL, PCB_funcao_thread, (void*)tcb) != 0) {
-            perror("Erro ao criar thread");
-            free(tcb); // evita vazamento
-            return -1;
-        }
+        pthread_create(&pcb->threads_ids[i], NULL, PCB_funcao_thread, (void*)tcb);
+  
     }
 }
+
+void PCB_join_threads(PCB* p) {
+    if (!p || !p->threads_ids) return;
+
+    for (int i = 0; i < p->num_threads; i++) {
+        pthread_join(p->threads_ids[i], NULL);
+    }
+}
+EstadoProcesso PCB_get_estado(PCB* p){
+    return p->estado;
+}
+
+void PCB_set_estado(PCB* p, EstadoProcesso esp){
+    p->estado = esp;
+}
+
+pthread_mutex_t* PCB_get_mutex(PCB* p){
+    return p->mutex;
+}  // trava para evitar acesso concorrente
+    
+pthread_cond_t* PCB_get_cond(PCB* p){
+    return p->cv;
+}   

@@ -31,9 +31,9 @@ PCB* SCHEDULER_seleciona_proximo_processo(SCHEDULER* e) {
     pthread_mutex_lock(&e->mutex);
 
     if (e->politica == FCFS || e->politica == ROUND_ROBIN) {
-        p = desenfileirar(e->fila);
+        p = QUEUE_pop(e->fila);
     } else if (e->politica == PRIORIDADE) {
-        p = remover_por_prioridade(e->fila);
+        p = QUEUE_pop(e->fila);
     }
 
     pthread_mutex_unlock(&e->mutex);
@@ -47,28 +47,28 @@ void* SCHEDULER_thread(void* arg) {
     while (1) {
         // Espera até ter processo ou todos os processos terem chegado
         pthread_mutex_lock(&e->mutex);
-        while (fila_vazia(e->fila) && !e->todos_processos_chegaram) {
+        while (QUEUE_vazia(e->fila) && !e->todos_processos_chegaram) {
             pthread_cond_wait(&e->cv, &e->mutex);
         }
 
         // Condição de término: nada mais a fazer
-        if (fila_vazia(e->fila) && e->todos_processos_chegaram) {
+        if (QUEUE_vazia(e->fila) && e->todos_processos_chegaram) {
             pthread_mutex_unlock(&e->mutex);
             break;
         }
         pthread_mutex_unlock(&e->mutex);
 
         // Seleciona o próximo processo da fila
-        PCB* proc = selecionar_proximo_processo(e);
+        PCB* proc = SCHEDULER_seleciona_proximo_processo(e);
         if (!proc) continue;
 
         // Atualiza o estado do processo para EXECUTANDO
-        pthread_mutex_t* mtx = get_mutex_pcb(proc);
-        pthread_cond_t* cv = get_cv_pcb(proc);
+        pthread_mutex_t* mtx = PCB_get_mutex(proc);
+        pthread_cond_t* cv = PCB_get_cond(proc);
 
         pthread_mutex_lock(mtx);
-        if (get_estado_pcb(proc) == PRONTO) {
-            set_estado_pcb(proc, EXECUTANDO);
+        if (PCB_get_estado(proc) == PRONTO) {
+            PCB_set_estado(proc, EXECUTANDO);
             pthread_cond_broadcast(cv);  // Acorda todas as threads do processo
         }
         pthread_mutex_unlock(mtx);
@@ -76,21 +76,21 @@ void* SCHEDULER_thread(void* arg) {
         // Executa conforme a política
         switch (e->politica) {
             case FCFS:
-                aguardar_finalizacao(proc);
+                SCHEDULER_aguarda_finalizacao_processo(proc);
                 break;
 
             case ROUND_ROBIN:
             case PRIORIDADE:
-                executar_quantum(proc, e->quantum_ms);
-                pthread_mutex_lock(mtx);
-                if (get_estado_pcb(proc) != FINALIZADO) {
-                    set_estado_pcb(proc, PRONTO);
-                    pthread_mutex_lock(&e->mutex);
-                    reinserir_processo_fila(e->fila, proc);
-                    pthread_mutex_unlock(&e->mutex);
-                }
-                pthread_mutex_unlock(mtx);
-                break;
+                // executar_quantum(proc, e->quantum_ms);
+                // pthread_mutex_lock(mtx);
+                // if (get_estado_pcb(proc) != FINALIZADO) {
+                //     set_estado_pcb(proc, PRONTO);
+                //     pthread_mutex_lock(&e->mutex);
+                //     reinserir_processo_fila(e->fila, proc);
+                //     pthread_mutex_unlock(&e->mutex);
+                // }
+                // pthread_mutex_unlock(mtx);
+                // break;
         }
     }
 
@@ -98,11 +98,11 @@ void* SCHEDULER_thread(void* arg) {
 }
 
 void SCHEDULER_aguarda_finalizacao_processo(PCB* pcb) {
-    pthread_mutex_t* mutex = get_mutex_pcb(pcb);
-    pthread_cond_t* cv = get_cv_pcb(pcb);
+    pthread_mutex_t* mutex = PCB_get_mutex(pcb);
+    pthread_cond_t* cv = PCB_get_cond(pcb);
 
     pthread_mutex_lock(mutex);
-    while (get_estado_pcb(pcb) != FINALIZADO) {
+    while (PCB_get_estado(pcb) != FINALIZADO) {
         pthread_cond_wait(cv, mutex);
     }
     pthread_mutex_unlock(mutex);

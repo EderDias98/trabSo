@@ -12,6 +12,12 @@
 
 #define MAX_PROCESSES 100
 
+long current_time_millis() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (long)(tv.tv_sec) * 1000 + (tv.tv_usec) / 1000;
+}
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Uso: %s arquivo_entrada\n", argv[0]);
@@ -32,7 +38,7 @@ int main(int argc, char *argv[]) {
     // Alocar lista de PCBs
     PCB **pcb_list = malloc( sizeof(PCB*) * n_processes);
     for(int i=0; i< n_processes; i++){
-        pcb_list[i] = malloc(tamanhoPcb());
+        pcb_list[i] = malloc(PCB_get_tamanho());
     }
 
 
@@ -45,7 +51,7 @@ int main(int argc, char *argv[]) {
         fscanf(input_file, "%d", &arrival_time);
 
         // Inicializar PCB (função a ser implementada)
-        InicializaPCB(&pcb_list[i], i+1, duration, priority, num_threads, arrival_time);
+        PCB_inicializa(pcb_list[i], i+1, duration, priority, num_threads, arrival_time);
     }
 
     // Ler política de escalonamento
@@ -57,9 +63,9 @@ int main(int argc, char *argv[]) {
     
 
     // --- 3. Inicialização da fila de prontos e variáveis globais ---
-    FILA* f = criaFila(scheduler_type, pcb_list);
+    FILA* f = QUEUE_cria(scheduler_type, pcb_list);
 
-    SCHEDULER* e  = criarEscalonador(scheduler_type,500, f);
+    SCHEDULER* e  = SCHEDULER_cria(scheduler_type,500, f);
     // --- 4. Criar thread escalonadora ---
     pthread_t scheduler_thread;
     pthread_create(&scheduler_thread, NULL, SCHEDULER_thread , e);
@@ -90,15 +96,14 @@ int main(int argc, char *argv[]) {
 
     // --- 7. Esperar todas as threads dos processos finalizarem ---
     for (int i = 0; i < n_processes; i++) {
-        pcb_join_threads(&pcb_list[i]);
+        PCB_join_threads(pcb_list[i]);
     }
 
-    // --- 8. Salvar log em arquivo ---
-    save_log_to_file("log_execucao_minikernel.txt");
+
 
     // --- 9. Liberar memória e finalizar ---
     for (int i = 0; i < n_processes; i++) {
-        pcb_destroy(&pcb_list[i]);
+        PCB_libera(pcb_list[i]);
     }
     free(pcb_list);
 

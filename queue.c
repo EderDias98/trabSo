@@ -39,7 +39,7 @@ void QUEUE_push(FILA* fila, PCB* processo) {
         int i = fila->fim;
         while (i != fila->inicio) {
             int prev = (i - 1 + MAX) % MAX;
-            if (PcbGetPrioridade(fila->processos[prev]) <= PcbGetPrioridade(processo)) break;
+            if (PCB_get_prioridade(fila->processos[prev]) <= PCB_get_prioridade(processo)) break;
             fila->processos[i] = fila->processos[prev];
             i = prev;
         }
