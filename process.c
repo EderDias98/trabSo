@@ -43,6 +43,8 @@ PCB* PCB_inicializa(PCB* p ,int pid, int duracao_total, int prioridade, int num_
     p->num_threads = num_threads;
     p->tempo_chegada = tempo_chegada;
     p->estado = PRONTO;
+    p->mutex = malloc(sizeof(pthread_mutex_t));
+    p->cv = malloc(sizeof(pthread_cond_t));
 
     // Inicializa mutex e variável de condição
     pthread_mutex_init(p->mutex, NULL);
@@ -83,7 +85,7 @@ void*  PCB_funcao_thread(void* arg) {
         }
 
         pthread_mutex_unlock(pcb->mutex);
-        usleep(TEMPO_EXECUCAO_THREAD * 1000); // simula 500 ms executando
+        usleep(TEMPO_EXECUCAO_THREAD ); // simula 500 ms executando
 
         pthread_mutex_lock(pcb->mutex);
         if (pcb->tempo_restante > 0) {

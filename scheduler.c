@@ -6,8 +6,8 @@ struct SCHEDULER{
     FILA* fila;
     PoliticaEscalonamento politica;
     int quantum_ms;
-    pthread_mutex_t mutex;
-    pthread_cond_t cv;
+    pthread_mutex_t *mutex;
+    pthread_cond_t *cv;
     int processos_restantes;
     int todos_processos_chegaram;
     int processo_em_execucao;
@@ -18,6 +18,9 @@ SCHEDULER* SCHEDULER_cria(PoliticaEscalonamento politica, int quantum_ms,FILA* f
     e->fila = f;
     e->politica = politica;
     e->quantum_ms = quantum_ms;
+    e->mutex = malloc(sizeof(pthread_mutex_t));
+    e->cv = malloc(sizeof(pthread_cond_t));
+
     pthread_mutex_init(&e->mutex, NULL);
     pthread_cond_init(&e->cv, NULL);
     e->processos_restantes = 0;

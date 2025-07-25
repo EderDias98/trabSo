@@ -1,6 +1,6 @@
 # Compilador e flags
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -pthread -D_XOPEN_SOURCE=700
+CFLAGS = -Wall -Wextra -std=c99 -g -pthread -D_XOPEN_SOURCE=700
 
 # Busca todos os arquivos .c do diretório atual
 SRCS := $(wildcard *.c)
