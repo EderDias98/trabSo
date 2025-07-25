@@ -68,24 +68,31 @@ void PCB_libera(PCB* p) {
     free(p);
 }
 
-void*  PCB_funcao_thread(void* arg) {
+
+void* PCB_funcao_thread(void* arg) {
     TCB* tcb = (TCB*) arg;
     PCB* pcb = tcb->pcb;
+    int id = tcb->indice_thread;
+
+    printf("[THREAD %d.%d] Iniciando...\n", pcb->pid, id);
 
     while (1) {
         pthread_mutex_lock(pcb->mutex);
         while (pcb->estado != EXECUTANDO && pcb->estado != FINALIZADO) {
-            // a thread entra em espera ate o estado dela mudar
+            printf("[THREAD %d.%d] Esperando para executar. Estado atual: %d\n", pcb->pid, id, pcb->estado);
             pthread_cond_wait(pcb->cv, pcb->mutex);
         }
 
         if (pcb->estado == FINALIZADO) {
+            printf("[THREAD %d.%d] Processo finalizado. Encerrando thread.\n", pcb->pid, id);
             pthread_mutex_unlock(pcb->mutex);
             break;
         }
 
+        printf("[THREAD %d.%d] Executando por %d ms...\n", pcb->pid, id, TEMPO_EXECUCAO_THREAD);
         pthread_mutex_unlock(pcb->mutex);
-        usleep(TEMPO_EXECUCAO_THREAD ); // simula 500 ms executando
+
+        usleep(TEMPO_EXECUCAO_THREAD);
 
         pthread_mutex_lock(pcb->mutex);
         if (pcb->tempo_restante > 0) {
@@ -93,16 +100,22 @@ void*  PCB_funcao_thread(void* arg) {
             if (pcb->tempo_restante <= 0) {
                 pcb->tempo_restante = 0;
                 pcb->estado = FINALIZADO;
-                pthread_cond_broadcast(pcb->cv); // avisa todas threads para terminarem
+                
+                printf("[THREAD %d.%d] Processo terminou a execução!\n", pcb->pid, id);
+                pthread_cond_broadcast(pcb->cv);
+            } else {
+                printf("[THREAD %d.%d] Tempo restante: %d ms\n", pcb->pid, id, pcb->tempo_restante);
             }
         }
         pthread_mutex_unlock(pcb->mutex);
     }
 
+    printf("[THREAD %d.%d] Encerrada.\n", pcb->pid, id);
     free(tcb);
     return NULL;
 }
 
+   
 int PCB_get_tempo_chegada(PCB* p){
     return p->tempo_chegada;
 }
@@ -147,3 +160,7 @@ pthread_mutex_t* PCB_get_mutex(PCB* p){
 pthread_cond_t* PCB_get_cond(PCB* p){
     return p->cv;
 }   
+
+int PCB_get_pid(PCB* p){
+    return p->pid;
+}

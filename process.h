@@ -44,4 +44,6 @@ pthread_mutex_t* PCB_get_mutex(PCB* p);
   
 pthread_cond_t* PCB_get_cond(PCB* p);
 
+int PCB_get_pid(PCB* p);
+
 #endif

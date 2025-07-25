@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     // --- 3. Inicialização da fila de prontos e variáveis globais ---
     FILA* f = QUEUE_cria(scheduler_type, pcb_list);
 
-    SCHEDULER* e  = SCHEDULER_cria(scheduler_type,500, f);
+    SCHEDULER* e  = SCHEDULER_cria(scheduler_type,500, f, n_processes);
     // --- 4. Criar thread escalonadora ---
     pthread_t scheduler_thread;
     pthread_create(&scheduler_thread, NULL, SCHEDULER_thread , e);

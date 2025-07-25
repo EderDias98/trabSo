@@ -5,7 +5,7 @@
 
 typedef struct FILA FILA;
 typedef enum {
-    FCFS,
+    FCFS=1,
     ROUND_ROBIN,
     PRIORIDADE
 } PoliticaEscalonamento;
