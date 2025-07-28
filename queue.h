@@ -10,7 +10,7 @@ typedef enum {
     PRIORIDADE
 } PoliticaEscalonamento;
 // Função de criação
-FILA* QUEUE_cria(int politica, PCB** processos);
+FILA* QUEUE_cria(int politica, int n_processes);
 
 
 

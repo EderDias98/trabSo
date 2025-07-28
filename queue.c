@@ -13,13 +13,13 @@ struct FILA {
 };
 
 // Função de criação
-FILA* QUEUE_cria(int politica, PCB** processos) {
+FILA* QUEUE_cria(int politica, int n_processes) {
     FILA* fila = malloc(sizeof(FILA));
     fila->politica = politica;
     fila->inicio = 0;
     fila->fim = 0;
     fila->tamanho = 0;
-    fila->processos = processos;
+    fila->processos = malloc (sizeof(PCB*)*n_processes);
     return fila;
 }
 
@@ -28,6 +28,7 @@ FILA* QUEUE_cria(int politica, PCB** processos) {
 // Libera a fila
 void QUEUE_libera(FILA* fila) {
     if(!fila) return;
+    free(fila->processos);
     free(fila);
 }
 

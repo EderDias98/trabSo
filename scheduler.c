@@ -11,13 +11,14 @@ struct SCHEDULER{
     int processos_restantes;
     int todos_processos_chegaram;
     int processo_em_execucao;
+    FILE* output_file;
 } ;
 
 void SCHEDULER_decrementa_processos_restantes(SCHEDULER* e){
     e->processos_restantes -=1; 
 }
 
-SCHEDULER* SCHEDULER_cria(PoliticaEscalonamento politica, int quantum_ms,FILA* f , int quantidade_processos) {
+SCHEDULER* SCHEDULER_cria(PoliticaEscalonamento politica, int quantum_ms,FILA* f , int quantidade_processos, FILE* output_file) {
     SCHEDULER* e = malloc(sizeof(SCHEDULER));
     e->fila = f;
     e->politica = politica;
@@ -30,6 +31,7 @@ SCHEDULER* SCHEDULER_cria(PoliticaEscalonamento politica, int quantum_ms,FILA* f
     e->processos_restantes = quantidade_processos;
     e->todos_processos_chegaram = 0;
     e->processo_em_execucao = 0;
+    e->output_file = output_file;
     return e;
 }
 PCB* SCHEDULER_seleciona_proximo_processo(SCHEDULER* e) {
@@ -94,6 +96,7 @@ void* SCHEDULER_thread(void* arg) {
         switch (e->politica) {
             case FCFS:
                 printf("[ESCALONADOR] Aguardando finalização do processo %d (FCFS).\n", pid);
+                fprintf(e->output_file,"[FCFS] Executando processo PID %d\n", pid);
                 SCHEDULER_aguarda_finalizacao_processo(proc,e);
                 printf("[ESCALONADOR] Processo %d finalizado.\n", pid);
                 break;

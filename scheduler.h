@@ -6,7 +6,7 @@
 
 typedef struct SCHEDULER SCHEDULER;
 
-SCHEDULER* SCHEDULER_cria(PoliticaEscalonamento politica, int quantum_ms,FILA* f, int quantidade_processos );
+SCHEDULER* SCHEDULER_cria(PoliticaEscalonamento politica, int quantum_ms,FILA* f, int quantidade_processos, FILE* output_file );
  
 
 PCB* SCHEDULER_seleciona_proximo_processo(SCHEDULER* e);
