@@ -71,25 +71,25 @@ void* SCHEDULER_thread(void* arg) {
         }
         pthread_mutex_unlock(e->mutex);
 
-        PCB* proc = SCHEDULER_seleciona_proximo_processo(e);
-        if (!proc) {
+        PCB* p = SCHEDULER_seleciona_proximo_processo(e);
+        if (!p) {
             printf("[ESCALONADOR] Nenhum processo retornado da fila. Continuando...\n");
             continue;
         }
 
-        int pid = PCB_get_pid(proc);
+        int pid = PCB_get_pid(p);
         printf("[ESCALONADOR] Processo %d selecionado.\n", pid);
 
-        pthread_mutex_t* mtx = PCB_get_mutex(proc);
-        pthread_cond_t* cv = PCB_get_cond(proc);
+        pthread_mutex_t* mtx = PCB_get_mutex(p);
+        pthread_cond_t* cv = PCB_get_cond(p);
 
         pthread_mutex_lock(mtx);
-        if (PCB_get_estado(proc) == PRONTO) {
-            PCB_set_estado(proc, EXECUTANDO);
+        if (PCB_get_estado(p) == PRONTO) {
+            PCB_set_estado(p, EXECUTANDO);
             printf("[ESCALONADOR] Processo %d setado para EXECUTANDO. Acordando threads.\n", pid);
             pthread_cond_broadcast(cv);
         } else {
-            printf("[ESCALONADOR] Processo %d não está pronto (estado: %d). Ignorado.\n", pid, PCB_get_estado(proc));
+            printf("[ESCALONADOR] Processo %d não está pronto (estado: %d). Ignorado.\n", pid, PCB_get_estado(p));
         }
         pthread_mutex_unlock(mtx);
 
@@ -97,18 +97,20 @@ void* SCHEDULER_thread(void* arg) {
             case FCFS:
                 printf("[ESCALONADOR] Aguardando finalização do processo %d (FCFS).\n", pid);
                 fprintf(e->output_file,"[FCFS] Executando processo PID %d\n", pid);
-                SCHEDULER_aguarda_finalizacao_processo(proc,e);
+                SCHEDULER_aguarda_finalizacao_processo(p,e);
                 printf("[ESCALONADOR] Processo %d finalizado.\n", pid);
+                fprintf(e->output_file,"[FCFS] Processo PID %d finalizado\n", pid);
                 break;
 
             case ROUND_ROBIN:
                 printf("[ESCALONADOR] (ROUND ROBIN) Executaria quantum para processo %d.\n", pid);
-                // executar_quantum(proc, e->quantum_ms);
+                SCHEDULER_executar_quantum(p,e,QUANTUM);
+                // executar_quantum(p, e->quantum_ms);
                 break;
 
             case PRIORIDADE:
                 printf("[ESCALONADOR] (PRIORIDADE) Executaria processo %d com prioridade.\n", pid);
-                // executar_quantum(proc, e->quantum_ms);
+                // executar_quantum(p, e->quantum_ms);
                 break;
         }
     }
@@ -146,4 +148,43 @@ void  SCHEDULER_notifica_novo_processo(SCHEDULER* e){
     pthread_mutex_lock(e->mutex);
     pthread_cond_signal(e->cv); // acorda a thread do escalonador
     pthread_mutex_unlock(e->mutex);
+}
+void SCHEDULER_executar_quantum(PCB* p, SCHEDULER* e, int quantum_ms) {
+    int pid = PCB_get_pid(p);
+
+    // Marca o início do quantum
+    printf("[ROUND ROBIN] Executando processo PID %d por até %d ms\n", pid, quantum_ms);
+   
+
+    pthread_mutex_t* mtx = PCB_get_mutex(p);
+   
+
+    // Dorme por quantum_ms (simulação de execução)
+    usleep(quantum_ms); 
+
+
+
+    int tempo_restante = PCB_get_remaining_time(p);
+    fprintf(e->output_file, "[RR] Executando processo PID %d com quantum %dms\n", pid, quantum_ms);
+
+     pthread_mutex_lock(mtx);
+    if (tempo_restante <= 0) {
+        // Processo finalizado dentro das threads
+        PCB_set_estado(p, FINALIZADO);
+        printf("[ROUND ROBIN] Processo %d finalizado durante o quantum.\n", pid);
+        fprintf(e->output_file, "[RR] Processo PID %d finalizado\n", pid);
+    } else {
+        // Processo ainda tem tempo restante — preempcionar e reinserir na fila
+        PCB_set_estado(p, PRONTO);
+        
+        pthread_mutex_lock(e->mutex);
+        QUEUE_push(e->fila, p);
+        
+        pthread_mutex_unlock(e->mutex);
+        pthread_cond_signal(e->cv);
+
+        printf("[ROUND ROBIN] Processo %d preemptado, reinserido na fila com %d ms restantes.\n",
+               pid, tempo_restante);
+    }
+    pthread_mutex_unlock(mtx);
 }

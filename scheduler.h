@@ -21,5 +21,6 @@ void SCHEDULER_aguarda_finalizacao_processo(PCB* pcb,SCHEDULER* e);
  
 
 void  SCHEDULER_notifica_novo_processo(SCHEDULER* e);
+void SCHEDULER_executar_quantum(PCB* p, SCHEDULER* e, int quantum_ms);
 
 #endif

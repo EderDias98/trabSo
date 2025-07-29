@@ -4,11 +4,7 @@
 #include "process.h"
 
 typedef struct FILA FILA;
-typedef enum {
-    FCFS=1,
-    ROUND_ROBIN,
-    PRIORIDADE
-} PoliticaEscalonamento;
+
 // Função de criação
 FILA* QUEUE_cria(int politica, int n_processes);
 

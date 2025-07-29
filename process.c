@@ -16,6 +16,7 @@ struct PCB
     pthread_mutex_t *mutex; // trava para evitar acesso concorrente
     pthread_cond_t *cv;     // variável de condição para sincronizar as threads
     pthread_t *threads_ids; // array com os IDs das threads do p
+    PoliticaEscalonamento politica;
 };
 
 struct TCB
@@ -31,7 +32,12 @@ int PCB_get_tamanho()
     return sizeof(PCB);
 }
 
-void PCB_le_processo(FILE *input_file, PCB* p, int pid)
+void PCB_set_politica(PCB *p, PoliticaEscalonamento pe)
+{
+    p->politica = pe;
+}
+
+void PCB_le_processo(FILE *input_file, PCB *p, int pid)
 {
     int duration, priority, num_threads, arrival_time;
 
@@ -41,7 +47,7 @@ void PCB_le_processo(FILE *input_file, PCB* p, int pid)
     fscanf(input_file, "%d", &arrival_time);
 
     // Inicializar PCB (função a ser implementada)
-    PCB_inicializa( p, pid, duration, priority, num_threads, arrival_time);
+    PCB_inicializa(p, pid, duration, priority, num_threads, arrival_time);
 }
 
 void PCB_inicializa(PCB *p, int pid, int duracao_total, int prioridade, int num_threads, int tempo_chegada)
@@ -62,6 +68,7 @@ void PCB_inicializa(PCB *p, int pid, int duracao_total, int prioridade, int num_
     p->estado = PRONTO;
     p->mutex = malloc(sizeof(pthread_mutex_t));
     p->cv = malloc(sizeof(pthread_cond_t));
+    p->politica = 0;
 
     // Inicializa mutex e variável de condição
     pthread_mutex_init(p->mutex, NULL);
@@ -110,12 +117,39 @@ void *PCB_funcao_thread(void *arg)
         pthread_mutex_unlock(pcb->mutex);
 
         printf("[THREAD %d.%d] Executando por %d ms...\n", pcb->pid, id, TEMPO_EXECUCAO_THREAD);
-        usleep(TEMPO_EXECUCAO_THREAD);
+        int tempo_executado = TEMPO_EXECUCAO_THREAD;
+        
+        if (pcb->politica == ROUND_ROBIN)
+        {
+            tempo_executado = 0;
+            const int passo = 10; // 10 ms
+            int interrompido = 0;
+
+            while (tempo_executado <= TEMPO_EXECUCAO_THREAD)
+            {
+                usleep(passo);
+                tempo_executado += passo;
+
+                pthread_mutex_lock(pcb->mutex);
+                if (pcb->estado != EXECUTANDO)
+                {
+                    printf("[THREAD %d.%d] Execução interrompida (estado mudou para %d).\n", pcb->pid, id, pcb->estado);
+                    interrompido = 1;
+                }
+                pthread_mutex_unlock(pcb->mutex);
+
+                if (interrompido)
+                    break;
+            }
+        }else{
+              usleep(TEMPO_EXECUCAO_THREAD);
+        }
+
 
         pthread_mutex_lock(pcb->mutex);
         if (pcb->tempo_restante > 0)
         {
-            pcb->tempo_restante -= TEMPO_EXECUCAO_THREAD;
+            pcb->tempo_restante -= tempo_executado;
             if (pcb->tempo_restante <= 0)
             {
                 pcb->tempo_restante = 0;
@@ -193,4 +227,7 @@ pthread_cond_t *PCB_get_cond(PCB *p)
 int PCB_get_pid(PCB *p)
 {
     return p->pid;
+}
+int PCB_get_remaining_time(PCB* p){
+    return p->tempo_restante;
 }

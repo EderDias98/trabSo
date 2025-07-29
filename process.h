@@ -6,6 +6,11 @@
 #include <pthread.h>
 #include <unistd.h>
 
+typedef enum {
+    FCFS=1,
+    ROUND_ROBIN,
+    PRIORIDADE
+} PoliticaEscalonamento;
 // Definições para políticas de escalonamento
 
 
@@ -17,6 +22,8 @@ typedef struct PCB PCB;
 typedef struct TCB TCB;
 typedef enum { PRONTO, EXECUTANDO, FINALIZADO } EstadoProcesso;
 
+
+void PCB_set_politica(PCB* p, PoliticaEscalonamento pe);
 int PCB_get_tamanho();
 
 void PCB_inicializa(PCB* processo ,int pid, int duracao_total, int prioridade, int num_threads, int tempo_chegada);
@@ -46,5 +53,5 @@ pthread_cond_t* PCB_get_cond(PCB* p);
 
 int PCB_get_pid(PCB* p);
 void PCB_le_processo(FILE *input_file, PCB* p, int pid);
-
+int PCB_get_remaining_time(PCB* p);
 #endif

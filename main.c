@@ -56,7 +56,11 @@ int main(int argc, char *argv[])
     int scheduler_type;
     fscanf(input_file, "%d", &scheduler_type);
     fclose(input_file);
-
+    
+    for (int i = 0; i < n_processes; i++)
+    {
+        PCB_set_politica(pcb_list[i], scheduler_type);
+    }
     // --- 2. Inicialização do escalonador ---
 
     // --- 3. Inicialização da fila de prontos e variáveis globais ---
