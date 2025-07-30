@@ -117,39 +117,17 @@ void *PCB_funcao_thread(void *arg)
         pthread_mutex_unlock(pcb->mutex);
 
         printf("[THREAD %d.%d] Executando por %d ms...\n", pcb->pid, id, TEMPO_EXECUCAO_THREAD);
-        int tempo_executado = TEMPO_EXECUCAO_THREAD;
         
-        if (pcb->politica == ROUND_ROBIN)
-        {
-            tempo_executado = 0;
-            const int passo = 10; // 10 ms
-            int interrompido = 0;
-
-            while (tempo_executado <= TEMPO_EXECUCAO_THREAD)
-            {
-                usleep(passo);
-                tempo_executado += passo;
-
-                pthread_mutex_lock(pcb->mutex);
-                if (pcb->estado != EXECUTANDO)
-                {
-                    printf("[THREAD %d.%d] Execução interrompida (estado mudou para %d).\n", pcb->pid, id, pcb->estado);
-                    interrompido = 1;
-                }
-                pthread_mutex_unlock(pcb->mutex);
-
-                if (interrompido)
-                    break;
-            }
-        }else{
-              usleep(TEMPO_EXECUCAO_THREAD);
-        }
+        
+       
+        usleep(TEMPO_EXECUCAO_THREAD);
+        
 
 
         pthread_mutex_lock(pcb->mutex);
         if (pcb->tempo_restante > 0)
         {
-            pcb->tempo_restante -= tempo_executado;
+            pcb->tempo_restante -= TEMPO_EXECUCAO_THREAD;;
             if (pcb->tempo_restante <= 0)
             {
                 pcb->tempo_restante = 0;

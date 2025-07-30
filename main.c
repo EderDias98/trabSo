@@ -100,7 +100,14 @@ int main(int argc, char *argv[])
 
                 PCB_create_threads(pcb_list[i]);
                 QUEUE_push(f, pcb_list[i]);
+                while (!SHEDULER_get_escalonador_esperando(e))
+                {
+                    usleep(100);
+                  
+                }
+                
                 SCHEDULER_notifica_novo_processo(e);
+               // pode acontecer de mandar o sinal e o escalonador nao receber como resolver
 
                 processos_adicionados++;
             }

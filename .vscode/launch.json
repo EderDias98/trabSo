@@ -6,7 +6,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/trabSO",
-      "args": ["1.txt"],
+      "args": ["./entradas/2.txt"],
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
       "externalConsole": false,
