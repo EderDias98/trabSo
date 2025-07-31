@@ -61,19 +61,22 @@ void* SCHEDULER_thread(void* arg) {
 
     while (1) {
         pthread_mutex_lock(e->mutex);
+        
         while (QUEUE_vazia(e->fila) && !e->todos_processos_chegaram) {
-            e->escalonador_esperando =1;
+            
             printf("[ESCALONADOR] Fila vazia. Esperando novos processos...\n");
             pthread_cond_wait(e->cv, e->mutex);
-            e->escalonador_esperando=0;
+            
+         
         }
+
 
         if (QUEUE_vazia(e->fila) && e->todos_processos_chegaram) {
             printf("[ESCALONADOR] Todos os processos chegaram e fila está vazia. Encerrando.\n");
             pthread_mutex_unlock(e->mutex);
             break;
         }
-        pthread_mutex_unlock(e->mutex);
+         pthread_mutex_unlock(e->mutex);
 
         PCB* p = SCHEDULER_seleciona_proximo_processo(e);
         if (!p) {
@@ -150,9 +153,9 @@ void SCHEDULER_aguarda_finalizacao_processo(PCB* pcb, SCHEDULER* e) {
 }
 
 void  SCHEDULER_notifica_novo_processo(SCHEDULER* e){
-    pthread_mutex_lock(e->mutex);
+   
     pthread_cond_signal(e->cv); // acorda a thread do escalonador
-    pthread_mutex_unlock(e->mutex);
+   
 }
 void SCHEDULER_executar_quantum(PCB* p, SCHEDULER* e, int quantum_ms) {
     int pid = PCB_get_pid(p);
@@ -175,7 +178,7 @@ void SCHEDULER_executar_quantum(PCB* p, SCHEDULER* e, int quantum_ms) {
      pthread_mutex_lock(mtx);
     if (PCB_get_estado(p) == FINALIZADO) {
         // Processo finalizado dentro das threads
-        
+        e->processos_restantes--;
         printf("[ROUND ROBIN] Processo %d finalizado durante o quantum.\n", pid);
         fprintf(e->output_file, "[RR] Processo PID %d finalizado\n", pid);
     } else {
@@ -183,16 +186,26 @@ void SCHEDULER_executar_quantum(PCB* p, SCHEDULER* e, int quantum_ms) {
         PCB_set_estado(p, PRONTO);
         
         pthread_mutex_lock(e->mutex);
-        QUEUE_push(e->fila, p);
         
-        pthread_mutex_unlock(e->mutex);
+        QUEUE_push(e->fila, p);
         pthread_cond_signal(e->cv);
+        pthread_mutex_unlock(e->mutex);
+        
 
         printf("[ROUND ROBIN] Processo %d preemptado, reinserido na fila com %d ms restantes.\n",
                pid, PCB_get_remaining_time(p));
     }
     pthread_mutex_unlock(mtx);
+    
+
 }
 int SHEDULER_get_escalonador_esperando(SCHEDULER* e){
     return e->escalonador_esperando;
+}
+
+pthread_mutex_t * SCHEDULER_get_mutex(SCHEDULER* e){
+    return e->mutex;
+}
+pthread_cond_t* SCHEDULER_get_cv(SCHEDULER* e){
+    return e->cv;
 }

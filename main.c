@@ -99,14 +99,13 @@ int main(int argc, char *argv[])
                 inserido[i] = 1;
 
                 PCB_create_threads(pcb_list[i]);
-                QUEUE_push(f, pcb_list[i]);
-                while (!SHEDULER_get_escalonador_esperando(e))
-                {
-                    usleep(100);
-                  
-                }
                 
-                SCHEDULER_notifica_novo_processo(e);
+                pthread_mutex_lock(SCHEDULER_get_mutex(e));
+                QUEUE_push(f, pcb_list[i]);
+                printf("NOTIFICA SINAL PRA ACORDAR ESCALONADOR\n");
+                pthread_cond_signal(SCHEDULER_get_cv(e));
+                pthread_mutex_unlock(SCHEDULER_get_mutex(e));
+                           
                // pode acontecer de mandar o sinal e o escalonador nao receber como resolver
 
                 processos_adicionados++;

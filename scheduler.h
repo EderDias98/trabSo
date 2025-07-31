@@ -23,4 +23,7 @@ void SCHEDULER_aguarda_finalizacao_processo(PCB* pcb,SCHEDULER* e);
 void  SCHEDULER_notifica_novo_processo(SCHEDULER* e);
 void SCHEDULER_executar_quantum(PCB* p, SCHEDULER* e, int quantum_ms);
 int SHEDULER_get_escalonador_esperando(SCHEDULER* e);
+
+pthread_mutex_t * SCHEDULER_get_mutex(SCHEDULER* e);
+pthread_cond_t* SCHEDULER_get_cv(SCHEDULER* e);
 #endif

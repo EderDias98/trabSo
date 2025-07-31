@@ -135,6 +135,7 @@ void *PCB_funcao_thread(void *arg)
 
                 printf("[THREAD %d.%d] Processo terminou a execução!\n", pcb->pid, id);
                 pthread_cond_broadcast(pcb->cv);
+              
             }
             else
             {
