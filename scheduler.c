@@ -13,6 +13,8 @@ struct SCHEDULER{
     int processo_em_execucao;
     FILE* output_file;
     int escalonador_esperando;
+    int escalonador_vazio;
+
 } ;
 
 void SCHEDULER_decrementa_processos_restantes(SCHEDULER* e){
@@ -34,22 +36,12 @@ SCHEDULER* SCHEDULER_cria(PoliticaEscalonamento politica, int quantum_ms,FILA* f
     e->processo_em_execucao = 0;
     e->output_file = output_file;
     e->escalonador_esperando = 0;
+    e->escalonador_vazio =0;
+
+
     return e;
 }
-PCB* SCHEDULER_seleciona_proximo_processo(SCHEDULER* e) {
-    PCB* p = NULL;
 
-    pthread_mutex_lock(e->mutex);
-
-    if (e->politica == FCFS || e->politica == ROUND_ROBIN) {
-        p = QUEUE_pop(e->fila);
-    } else if (e->politica == PRIORIDADE) {
-        p = QUEUE_pop(e->fila);
-    }
-
-    pthread_mutex_unlock(e->mutex);
-    return p;
-}
 
 void* SCHEDULER_thread(void* arg) {
     SCHEDULER* e = (SCHEDULER*)arg;
@@ -62,13 +54,22 @@ void* SCHEDULER_thread(void* arg) {
     while (1) {
         pthread_mutex_lock(e->mutex);
         
+        
+       
+        
         while (QUEUE_vazia(e->fila) && !e->todos_processos_chegaram) {
             
+            e->escalonador_esperando =1;
+            
+            pthread_cond_signal(e->cv);
             printf("[ESCALONADOR] Fila vazia. Esperando novos processos...\n");
             pthread_cond_wait(e->cv, e->mutex);
             
          
         }
+        e->escalonador_esperando =0;
+      
+        
 
 
         if (QUEUE_vazia(e->fila) && e->todos_processos_chegaram) {
@@ -78,7 +79,9 @@ void* SCHEDULER_thread(void* arg) {
         }
          pthread_mutex_unlock(e->mutex);
 
-        PCB* p = SCHEDULER_seleciona_proximo_processo(e);
+        PCB* p =  QUEUE_pop(e->fila);
+        printf("POO\n");
+        QUEUE_imprime(e->fila);
         if (!p) {
             printf("[ESCALONADOR] Nenhum processo retornado da fila. Continuando...\n");
             
@@ -113,6 +116,7 @@ void* SCHEDULER_thread(void* arg) {
             case ROUND_ROBIN:
                 printf("[ESCALONADOR] (ROUND ROBIN) Executaria quantum para processo %d.\n", pid);
                 SCHEDULER_executar_quantum(p,e,QUANTUM);
+                
                 // executar_quantum(p, e->quantum_ms);
                 break;
 
@@ -179,17 +183,23 @@ void SCHEDULER_executar_quantum(PCB* p, SCHEDULER* e, int quantum_ms) {
     if (PCB_get_estado(p) == FINALIZADO) {
         // Processo finalizado dentro das threads
         e->processos_restantes--;
+        if( e->processos_restantes ==0)
+            e->todos_processos_chegaram =1;
+        PCB_set_quantum_acabou(p);
         printf("[ROUND ROBIN] Processo %d finalizado durante o quantum.\n", pid);
         fprintf(e->output_file, "[RR] Processo PID %d finalizado\n", pid);
     } else {
         // Processo ainda tem tempo restante — preempcionar e reinserir na fila
+        
+        
         PCB_set_estado(p, PRONTO);
-        
-        pthread_mutex_lock(e->mutex);
-        
-        QUEUE_push(e->fila, p);
+        PCB_set_quantum_acabou(p);
         pthread_cond_signal(e->cv);
-        pthread_mutex_unlock(e->mutex);
+        
+        QUEUE_imprime(e->fila);
+        QUEUE_push(e->fila, p);
+        printf("PUSH\n");
+        QUEUE_imprime(e->fila);
         
 
         printf("[ROUND ROBIN] Processo %d preemptado, reinserido na fila com %d ms restantes.\n",
@@ -208,4 +218,7 @@ pthread_mutex_t * SCHEDULER_get_mutex(SCHEDULER* e){
 }
 pthread_cond_t* SCHEDULER_get_cv(SCHEDULER* e){
     return e->cv;
+}
+int SCHEDULER_get_escalonador_vazio(SCHEDULER* e){
+    return e->escalonador_vazio;
 }

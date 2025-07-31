@@ -17,12 +17,16 @@ struct PCB
     pthread_cond_t *cv;     // variável de condição para sincronizar as threads
     pthread_t *threads_ids; // array com os IDs das threads do p
     PoliticaEscalonamento politica;
+    int quantum_acabou;
 };
 
 struct TCB
 {
     PCB *pcb;
     int indice_thread;
+    SCHEDULER* e;
+    
+    
 };
 
 #define TEMPO_EXECUCAO_THREAD 500 // simula 500ms de execução
@@ -69,6 +73,7 @@ void PCB_inicializa(PCB *p, int pid, int duracao_total, int prioridade, int num_
     p->mutex = malloc(sizeof(pthread_mutex_t));
     p->cv = malloc(sizeof(pthread_cond_t));
     p->politica = 0;
+    p->quantum_acabou =0;
 
     // Inicializa mutex e variável de condição
     pthread_mutex_init(p->mutex, NULL);
@@ -101,6 +106,7 @@ void *PCB_funcao_thread(void *arg)
     while (1)
     {
         pthread_mutex_lock(pcb->mutex);
+        
         while (pcb->estado != EXECUTANDO && pcb->estado != FINALIZADO)
         {
             printf("[THREAD %d.%d] Esperando para executar. Estado atual: %d\n", pcb->pid, id, pcb->estado);
@@ -127,7 +133,7 @@ void *PCB_funcao_thread(void *arg)
         pthread_mutex_lock(pcb->mutex);
         if (pcb->tempo_restante > 0)
         {
-            pcb->tempo_restante -= TEMPO_EXECUCAO_THREAD;;
+            pcb->tempo_restante -= TEMPO_EXECUCAO_THREAD;
             if (pcb->tempo_restante <= 0)
             {
                 pcb->tempo_restante = 0;
@@ -142,6 +148,11 @@ void *PCB_funcao_thread(void *arg)
                 printf("[THREAD %d.%d] Tempo restante: %d ms\n", pcb->pid, id, pcb->tempo_restante);
             }
         }
+
+        while(!pcb->quantum_acabou && pcb->estado != FINALIZADO){
+            pthread_cond_wait(pcb->cv, pcb->mutex);
+        }
+        pcb->quantum_acabou =0;
         pthread_mutex_unlock(pcb->mutex);
     }
 
@@ -159,7 +170,7 @@ int PCB_get_prioridade(PCB *p)
 {
     return p->prioridade;
 }
-void PCB_create_threads(PCB *pcb)
+void PCB_create_threads(PCB *pcb, SCHEDULER* e)
 {
 
     for (int i = 0; i < pcb->num_threads; i++)
@@ -168,6 +179,8 @@ void PCB_create_threads(PCB *pcb)
 
         tcb->pcb = pcb;
         tcb->indice_thread = i;
+        tcb->e = e;
+     
 
         pthread_create(&pcb->threads_ids[i], NULL, PCB_funcao_thread, (void *)tcb);
     }
@@ -179,9 +192,12 @@ void PCB_join_threads(PCB *p)
         return;
 
     for (int i = 0; i < p->num_threads; i++)
-    {
+    {   printf("%d\n",p->pid);
         pthread_join(p->threads_ids[i], NULL);
+        printf("%d\n",p->pid);
+     
     }
+    printf("dasf\n");
 }
 EstadoProcesso PCB_get_estado(PCB *p)
 {
@@ -209,4 +225,8 @@ int PCB_get_pid(PCB *p)
 }
 int PCB_get_remaining_time(PCB* p){
     return p->tempo_restante;
+}
+
+void PCB_set_quantum_acabou(PCB* p){
+    p->quantum_acabou =1;
 }

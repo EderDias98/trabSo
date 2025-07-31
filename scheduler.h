@@ -1,8 +1,9 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 #include <pthread.h>
-#include "process.h" // Define PCB
+ #include "process.h" // Define PCB
 #include "queue.h"
+
 
 typedef struct SCHEDULER SCHEDULER;
 
@@ -26,4 +27,6 @@ int SHEDULER_get_escalonador_esperando(SCHEDULER* e);
 
 pthread_mutex_t * SCHEDULER_get_mutex(SCHEDULER* e);
 pthread_cond_t* SCHEDULER_get_cv(SCHEDULER* e);
+int SCHEDULER_get_escalonador_vazio(SCHEDULER* e);
+int SCHEDULER_get_quantum_acabou(SCHEDULER* e);
 #endif

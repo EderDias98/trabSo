@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 
+
 typedef enum {
     FCFS=1,
     ROUND_ROBIN,
@@ -17,7 +18,7 @@ typedef enum {
 
 #define QUANTUM 500 // Quantum para Round Robin
 
-
+typedef struct SCHEDULER SCHEDULER;
 // Tipos opacos
 typedef struct PCB PCB;
 typedef struct TCB TCB;
@@ -41,7 +42,7 @@ int PCB_get_tempo_chegada(PCB* p);
   
 int PCB_get_prioridade(PCB*p);
   
-void PCB_create_threads(PCB* pcb);
+void PCB_create_threads(PCB *pcb, SCHEDULER* e);
  
 void PCB_join_threads(PCB* p);
 EstadoProcesso PCB_get_estado(PCB* p);
@@ -55,4 +56,5 @@ pthread_cond_t* PCB_get_cond(PCB* p);
 int PCB_get_pid(PCB* p);
 void PCB_le_processo(FILE *input_file, PCB* p, int pid);
 int PCB_get_remaining_time(PCB* p);
+void PCB_set_quantum_acabou(PCB* t);
 #endif

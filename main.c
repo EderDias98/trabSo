@@ -82,6 +82,8 @@ int main(int argc, char *argv[])
         perror("calloc falhou");
         exit(EXIT_FAILURE);
     }
+    pthread_mutex_t* e_mutex = SCHEDULER_get_mutex(e);
+    pthread_cond_t* e_cv = SCHEDULER_get_cv(e);
 
     while (processos_adicionados < n_processes)
     {
@@ -98,13 +100,21 @@ int main(int argc, char *argv[])
                 
                 inserido[i] = 1;
 
-                PCB_create_threads(pcb_list[i]);
+                PCB_create_threads(pcb_list[i],e);
                 
                 pthread_mutex_lock(SCHEDULER_get_mutex(e));
+                
                 QUEUE_push(f, pcb_list[i]);
+                
+                
+                while(!SHEDULER_get_escalonador_esperando(e)){
+                    pthread_cond_wait(e_cv, e_mutex);
+                }
                 printf("NOTIFICA SINAL PRA ACORDAR ESCALONADOR\n");
-                pthread_cond_signal(SCHEDULER_get_cv(e));
+               pthread_cond_signal(SCHEDULER_get_cv(e));
+                
                 pthread_mutex_unlock(SCHEDULER_get_mutex(e));
+                
                            
                // pode acontecer de mandar o sinal e o escalonador nao receber como resolver
 

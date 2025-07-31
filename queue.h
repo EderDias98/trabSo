@@ -25,6 +25,6 @@ PCB* QUEUE_pop(FILA* fila);
 
 // Verifica se está vazia
 int  QUEUE_vazia(FILA* fila);
-
+void QUEUE_imprime(FILA* fila);
 
 #endif
